@@ -69,7 +69,7 @@ jobs:
         run: |
           # Format the message for Discord
           CONTENT=$(cat <<'EOF'
-          **🗑️ Swindon Rubbish Collection Schedule**
+          <@${{ secrets.MY_DISCORD_ID }}> **🗑️ Swindon Rubbish Collection Schedule**
           
           ```
           ${{ steps.check.outputs.output }}
