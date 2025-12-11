@@ -1,0 +1,92 @@
+name: Rubbish Collection Reminder
+
+on:
+  workflow_dispatch:
+    inputs:
+      postcode:
+        description: 'Postcode to check'
+        required: true
+        default: 'SN1 2JG'
+      house_number:
+        description: 'House number (optional)'
+        required: false
+        default: '10'
+  schedule:
+    # Run every Tuesday at 11pm UTC
+    - cron: '0 23 * * 2'
+
+jobs:
+  check-rubbish-days:
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      
+      - name: Run rubbish checker
+        id: check
+        run: |
+          # Parse MY_ADDRESS secret if not using manual inputs
+          if [ -n "${{ github.event.inputs.postcode }}" ]; then
+            # Use manual workflow inputs
+            POSTCODE="${{ github.event.inputs.postcode }}"
+            HOUSE_NUMBER="${{ github.event.inputs.house_number }}"
+          else
+            # Parse MY_ADDRESS secret (format: "postcode:house_number")
+            POSTCODE=$(echo "$MY_ADDRESS" | cut -d':' -f1 | xargs)
+            HOUSE_NUMBER=$(echo "$MY_ADDRESS" | cut -d':' -f2 | xargs)
+          fi
+          
+          # Build the command
+          CMD="python main.py --postcode \"$POSTCODE\""
+          if [ -n "$HOUSE_NUMBER" ]; then
+            CMD="$CMD --house-number \"$HOUSE_NUMBER\""
+          fi
+          
+          # Run and capture output
+          OUTPUT=$(eval $CMD)
+          echo "$OUTPUT"
+          
+          # Save output for Discord step (escape newlines for GitHub Actions)
+          echo "output<<EOF" >> $GITHUB_OUTPUT
+          echo "$OUTPUT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        env:
+          MY_ADDRESS: ${{ secrets.MY_ADDRESS }}
+      
+      - name: Send to Discord
+        if: success()
+        run: |
+          # Format the message for Discord
+          CONTENT=$(cat <<'EOF'
+          **🗑️ Swindon Rubbish Collection Schedule**
+          
+          ```
+          ${{ steps.check.outputs.output }}
+          ```
+          EOF
+          )
+          
+          # Send to Discord webhook
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\": $(echo "$CONTENT" | jq -Rs .)}" \
+               "${{ secrets.DISCORD_WEBHOOK_URL }}"
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d '{"content": "❌ Failed to check rubbish collection schedule. Check the workflow logs for details."}' \
+               "${{ secrets.DISCORD_WEBHOOK_URL }}"

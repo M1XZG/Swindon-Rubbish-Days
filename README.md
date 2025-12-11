@@ -20,11 +20,25 @@ Simple CLI that looks up Swindon Borough Council rubbish and recycling collectio
    ```
 
 ## Usage
+
+### Command Line
 ```bash
 python main.py --postcode "SN1 2JG" --house-number "10"
 ```
 - `--postcode` is required.
 - `--house-number` is optional but improves matching if the postcode returns multiple addresses.
+
+### GitHub Actions Workflow (Automated Discord Reminders)
+The repository includes a GitHub Actions workflow that automatically checks collection days and sends results to Discord.
+
+**Setup:**
+1. Add the following repository secrets (Settings → Secrets and variables → Actions):
+   - `MY_ADDRESS`: Your address in format `postcode:house_number` (e.g., `SN1 2JG:10`)
+   - `DISCORD_WEBHOOK_URL`: Your Discord webhook URL
+2. The workflow runs automatically every Sunday at 8am UTC
+3. You can also trigger it manually from the Actions tab with custom postcode/house number
+
+**Manual trigger:** Go to Actions → Rubbish Collection Reminder → Run workflow
 
 Example output:
 ```
