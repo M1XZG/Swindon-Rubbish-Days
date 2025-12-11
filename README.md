@@ -31,6 +31,9 @@ python main.py --postcode "SN1 2JG" --house-number "10"
 ### GitHub Actions Workflow (Automated Discord Reminders)
 The repository includes a GitHub Actions workflow that automatically checks collection days and sends results to Discord.
 
+> **⚠️ PRIVACY WARNING:**  
+> **This workflow logs your address and collection information in the GitHub Actions workflow logs.** If you plan to use this workflow, **make sure your repository is PRIVATE** to prevent your personal address from being publicly visible. Anyone with access to your repository can view workflow run logs, which will contain your postcode and house number.
+
 **Setup:**
 1. Add the following repository secrets (Settings → Secrets and variables → Actions):
    - `MY_ADDRESS`: Your address in format `postcode:house_number` (e.g., `SN1 2JG:10`)
